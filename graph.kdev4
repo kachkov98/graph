@@ -1,0 +1,4 @@
+[Project]
+Name=graph
+Manager=KDevCMakeManager
+VersionControl=kdevgit
