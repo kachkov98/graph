@@ -32,6 +32,7 @@ public:
 	void SetNode (Node node, const NodeType &data);
 	EdgeType GetEdge (Edge edge) const;
 	void SetEdge (Edge edge, const EdgeType &data);
+	const std::map<Node, EdgeType>& IncidentEdges(Node node) const;
 
 	std::size_t GetNodesNum () const;
 	std::size_t GetEdgesNum () const;
@@ -158,6 +159,13 @@ void Graph<NodeType, EdgeType>::SetEdge (Edge edge, const EdgeType &data)
 	if (!directed_)
 		edges_.at (edge.second).at (edge.first) = data;
 }
+
+template<typename NodeType, typename EdgeType>
+const std::map<Node, EdgeType>& Graph<NodeType, EdgeType>::IncidentEdges(Node node) const
+{
+	return edges_.at(node);
+}
+
 
 
 template<typename NodeType, typename EdgeType>
@@ -298,7 +306,7 @@ void Graph<NodeType, EdgeType>::PrintToDot (std::string file_name,
 			{
 				file << i << ( (directed_) ? " -> " : " -- ") << j.first << ' ';
 				edge_printer (file, j.second);
-	      		file << std::endl;
+				file << std::endl;
 			}
 	file << "}" << std::endl;
 }
