@@ -1,22 +1,10 @@
 #include <iostream>
-#include <queue>
 #include "graph.hpp"
-
-enum class Color : char
-{
-    nocolor,
-    color_1,
-    color_2
-};
 
 struct NodeData
 {
-	GraphLib::Node prev = 0;
-	Color color = Color::nocolor;
-	NodeData (GraphLib::Node prev_ = 0, Color color_ = Color::nocolor) :
-		prev (prev_),
-		color (color_)
-	{}
+	GraphLib::Node prev;
+	GraphLib::Color color;
 };
 
 typedef GraphLib::Graph<NodeData, char> Graph;
@@ -61,75 +49,6 @@ Graph GenerateCycleGraph (std::size_t nodes_num, bool directed)
 	return graph;
 }
 
-bool FindNocolorNode (const Graph &graph, GraphLib::Node &node)
-{
-	for (GraphLib::Node i = 0; i < graph.GetNodesNum(); ++i)
-		if (graph.GetNode (i).color == Color::nocolor)
-		{
-			node = i;
-			return true;
-		}
-	return false;
-}
-
-Color InverseColor (Color color)
-{
-	return (color == Color::color_1) ? Color::color_2 :
-	       (color == Color::color_2) ? Color::color_1 : Color::nocolor;
-}
-
-bool PaintGraph (Graph &graph, GraphLib::Edge &cycle)
-{
-	GraphLib::Node cur_node;
-	while (FindNocolorNode (graph, cur_node))
-	{
-		// BFS
-		std::queue<GraphLib::Node> cur_nodes;
-		cur_nodes.push (cur_node);
-		graph.SetNode (cur_node, NodeData (cur_node, Color::color_1));
-		while (!cur_nodes.empty())
-		{
-			cur_node = cur_nodes.front();
-			cur_nodes.pop();
-			for (const auto &edge : graph.IncidentEdges (cur_node))
-			{
-				GraphLib::Node node = edge.first;
-				if (graph.GetNode (node).color == Color::nocolor)
-				{
-					graph.SetNode (node, NodeData (cur_node, InverseColor (graph.GetNode (cur_node).color)));
-					cur_nodes.push (node);
-				}
-				else if (graph.GetNode (node).color != InverseColor (graph.GetNode (cur_node).color))
-				{
-					cycle = std::make_pair (cur_node, node);
-					return false;
-				}
-			}
-		}
-	}
-	return true;
-}
-
-void PrintCycle (const Graph &graph, const GraphLib::Edge &cycle)
-{
-	std::cout << "Nodes in cycle:" << std::endl;
-
-	GraphLib::Node cur_node = cycle.first;
-	while (graph.GetNode (cur_node).prev != cur_node)
-	{
-		std::cout << cur_node << ' ';
-		cur_node = graph.GetNode (cur_node).prev;
-	}
-
-	cur_node = cycle.second;
-	while (graph.GetNode (cur_node).prev != cur_node)
-	{
-		std::cout << cur_node << ' ';
-		cur_node = graph.GetNode (cur_node).prev;
-	}
-	std::cout << cur_node << std::endl;
-}
-
 int main ()
 {
 	Graph complete = GenerateCompleteGraph (5, false);
@@ -153,13 +72,13 @@ int main ()
 	{
 		switch (node.color)
 		{
-			case Color::nocolor:
+			case GraphLib::Color::nocolor:
 				stream << "[color=grey]";
 				break;
-			case Color::color_1:
+			case GraphLib::Color::color_1:
 				stream << "[color=red]";
 				break;
-			case Color::color_2:
+			case GraphLib::Color::color_2:
 				stream << "[color=blue]";
 				break;
 		}
