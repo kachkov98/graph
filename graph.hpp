@@ -8,6 +8,7 @@
 #include <string>
 #include <queue>
 #include <deque>
+#include <stack>
 #include <list>
 #include <map>
 
@@ -74,10 +75,15 @@ enum class Color : char
 	color_2
 };
 
-template<typename Graph>
-bool PaintGraph (Graph& graph, typename Graph::Edge& cycle);
-template<typename Graph>
-void PrintCycle (const Graph& graph, const typename Graph::Edge& cycle);
+template<typename GraphType>
+bool BFSPaint (GraphType& graph, Edge& cycle);
+template<typename GraphType>
+void BFSPrintCycle (const GraphType& graph, const Edge& cycle);
+
+template<typename GraphType>
+bool DFSPaint (GraphType& graph, Edge& cycle);
+template<typename GraphType>
+void DFSPrintCycle (const GraphType& graph, const Edge& cycle);
 
 // implementation
 template<typename NodeType, typename EdgeType>
@@ -322,6 +328,7 @@ void Graph<NodeType, EdgeType>::PrintToDot (std::string file_name,
 
 namespace
 {
+// Helpers for graph painting algorithms
 template<typename Graph>
 bool FindNocolorNode (const Graph& graph, Node& node)
 {
@@ -341,8 +348,8 @@ Color InverseColor (Color color)
 }
 }
 
-template<typename Graph>
-bool PaintGraph (Graph& graph, Edge& cycle)
+template<typename GraphType>
+bool BFSPaint (GraphType& graph, Edge& cycle)
 {
 	Node cur_node;
 	while (FindNocolorNode (graph, cur_node))
@@ -359,13 +366,15 @@ bool PaintGraph (Graph& graph, Edge& cycle)
 			for (const auto &edge : graph.IncidentEdges (cur_node))
 			{
 				Node node = edge.first;
-				if (graph.NodeData (node).color == Color::nocolor)
+				Color& node_color = graph.NodeData (node).color;
+				Color& cur_node_color = graph.NodeData (cur_node).color;
+				if (node_color == Color::nocolor)
 				{
-					graph.NodeData (node).color = InverseColor (graph.NodeData (cur_node).color);
+					node_color = InverseColor (cur_node_color);
 					graph.NodeData (node).prev = cur_node;
 					cur_nodes.push (node);
 				}
-				else if (graph.NodeData (node).color != InverseColor (graph.NodeData (cur_node).color))
+				else if (node_color != InverseColor (cur_node_color))
 				{
 					cycle = std::make_pair (cur_node, node);
 					return false;
@@ -376,21 +385,99 @@ bool PaintGraph (Graph& graph, Edge& cycle)
 	return true;
 }
 
-template <typename Graph>
-void PrintCycle (const Graph& graph, const Edge& cycle)
+template<typename GraphType>
+void BFSPrintCycle (const GraphType& graph, const Edge& cycle)
 {
 	std::cout << "Nodes in cycle:" << std::endl;
+
+	std::stack<Node> stack1;
+	std::stack<Node> stack2;
 
 	Node cur_node = cycle.first;
 	while (graph.NodeData (cur_node).prev != cur_node)
 	{
-	while (graph.NodeData (cur_node).prev != cur_node)
-	{
-		std::cout << cur_node << ' ';
+		stack1.push (cur_node);
 		cur_node = graph.NodeData (cur_node).prev;
 	}
-	std::cout << cur_node << std::endl;
+	stack1.push (cur_node);
+	cur_node = cycle.second;
+	while (graph.NodeData (cur_node).prev != cur_node)
+	{
+		stack2.push (cur_node);
+		cur_node = graph.NodeData (cur_node).prev;
+	}
+	stack2.push (cur_node);
+
+	while (stack1.top() == stack2.top())
+	{
+		cur_node = stack1.top();
+		stack1.pop();
+		stack2.pop();
+	}
+
+	std::cout << cur_node << ' ';
+	while (!stack1.empty())
+	{
+		std::cout << stack1.top() << ' ';
+		stack1.pop();
+	}
+	while (!stack2.empty())
+	{
+		std::cout << stack2.top() << ' ';
+		stack2.pop();
+	}
+	std::cout << std::endl;
 }
+
+template<typename GraphType>
+bool DFSPaint (GraphType& graph, Edge& cycle)
+{
+	Node cur_node;
+	while (FindNocolorNode (graph, cur_node))
+	{
+		// DFS
+		std::stack<Node> cur_nodes;
+		cur_nodes.push (cur_node);
+		graph.NodeData (cur_node).color = Color::color_2;
+		graph.NodeData (cur_node).prev = cur_node;
+		while (!cur_nodes.empty())
+		{
+			cur_node = cur_nodes.top ();
+			cur_nodes.pop ();
+			Color& cur_node_color = graph.NodeData (cur_node).color;
+			Color& prev_node_color = graph.NodeData(graph.NodeData (cur_node).prev).color;
+			cur_node_color = InverseColor (prev_node_color);
+			for (const auto &edge : graph.IncidentEdges (cur_node))
+			{
+				Node node = edge.first;
+				Color& node_color = graph.NodeData (node).color;
+				if (node_color == Color::nocolor)
+				{
+					graph.NodeData (node).prev = cur_node;
+					cur_nodes.push (node);
+				}
+				else if (node_color != InverseColor (cur_node_color))
+				{
+					cycle = std::make_pair (cur_node, node);
+					return false;
+				}
+			}
+		}
+	}
+	return true;
+}
+
+template<typename GraphType>
+void DFSPrintCycle(const GraphType& graph, const Edge& cycle)
+{
+	std::cout << "Nodes in cycle:" << std::endl;
+	Node cur_node = cycle.first;
+	while (cur_node != cycle.second)
+	{
+		std::cout << cur_node << ' ';
+		cur_node = graph.NodeData(cur_node).prev;
+	}
+	std::cout << cur_node << std::endl;
 }
 }
 
